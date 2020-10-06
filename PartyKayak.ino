@@ -12,15 +12,17 @@
 #define PORT_LED_COUNT 117
 #define COMBING_PIN 10
 #define COMBING_LED_COUNT 180
-//#define OUTER_STRIP_PIN 8
-//#define OUTER_STRIP_LED_COUNT 0
-//CHANGE
+#define OUTER_STRIP_STARBOARD_PIN 9
+#define OUTER_STRIP_STARBOARD_LED_COUNT 194
+#define OUTER_STRIP_PORT_PIN 8
+#define OUTER_STRIP_PORT_LED_COUNT 194
 
 Adafruit_NeoPixel starboard(STARBOARD_LED_COUNT, STARBOARD_PIN, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel center(CENTER_LED_COUNT, CENTER_PIN, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel port(PORT_LED_COUNT, PORT_PIN, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel combing(COMBING_LED_COUNT, COMBING_PIN, NEO_GRB + NEO_KHZ800);
-//Adafruit_NeoPixel outer_strip(OUTER_STRIP_LED_COUNT, OUTER_STRIP_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel outer_strip_starboard(OUTER_STRIP_STARBOARD_LED_COUNT, OUTER_STRIP_STARBOARD_PIN, NEO_GRB + NEO_KHZ800);
+Adafruit_NeoPixel outer_strip_port(OUTER_STRIP_PORT_LED_COUNT, OUTER_STRIP_PORT_PIN, NEO_GRB + NEO_KHZ800);
 
 //Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 // Argument 1 = Number of pixels in NeoPixel strip
@@ -45,9 +47,18 @@ void setup() {
   combing.begin();
   combing.setBrightness(10);
   combing.show(); 
+  
+  outer_strip_starboard.begin();
+  outer_strip_starboard.setBrightness(80);
+  outer_strip_starboard.show(); 
+  
+  outer_strip_port.begin();
+  outer_strip_port.setBrightness(80);
+  outer_strip_port.show(); 
 }
 
 void loop() {
+  
   rainbow(20);
 //  theaterChaseRainbow(20);
 }
@@ -56,13 +67,15 @@ void rainbow(uint8_t wait) {
   uint16_t i, j;
 
   for(j=0; j<256; j++) {
-    for(i=0; i<206; i++) { // 206 total pixels in star or port
+    for(i=0; i<206; i++) { // everything is in terms of the outer strip
       setPixel(i, Wheel((i+j) & 255));
     }
     starboard.show();
     center.show();
     port.show();
     combing.show();
+    outer_strip_starboard.show();
+    outer_strip_port.show();
     delay(wait);
   }
 }
@@ -71,14 +84,15 @@ void rainbow(uint8_t wait) {
 void theaterChaseRainbow(uint8_t wait) {
   for (int j=0; j < 256; j++) {     // cycle all 256 colors in the wheel
     for (int q=0; q < 3; q++) {
-      for (uint16_t i=0; i < 206; i=i+3) {
+      for (uint16_t i=0; i < OUTER_STRIP_STARBOARD_LED_COUNT; i=i+3) {
         setPixel(i+q, Wheel( (i+j) % 255));    //turn every third pixel on
       }
       starboard.show();
       center.show();
       port.show();
       combing.show();
-
+      outer_strip_starboard.show();
+      outer_strip_port.show();
       delay(wait);
 
       for (uint16_t i=0; i < 206; i=i+3) {
@@ -88,7 +102,7 @@ void theaterChaseRainbow(uint8_t wait) {
   }
 }
 
-// this sets the pixels of three neopixel strips down a kayak and a strip around the combing of the kayak as if they were all a single strip.
+// this sets the pixels of three neopixel strips down a kayak, a strip around the combing of the kayak and two outer strips as if they were all a single strip.
 void setPixel(uint8_t pixelIndex, uint8_t j) {
   
   uint8_t bow_port_star_led_count = 58;
@@ -99,6 +113,7 @@ void setPixel(uint8_t pixelIndex, uint8_t j) {
   uint8_t stern_port_star_led_count = 59;
   uint8_t stern_center_led_count = 15;
   uint8_t after_hatch_port_star_led_count = 20;
+  uint8_t hatch_gap_led_count = stern_port_star_led_count - stern_center_led_count;
 
   // 58
   uint8_t after_bow = bow_port_star_led_count;
@@ -109,7 +124,7 @@ void setPixel(uint8_t pixelIndex, uint8_t j) {
   // 191
   uint8_t after_hatch = hatch_led_count + after_middle;
 
-  // because the port and starboard strips are the longest, everything will be addressed in terms of them
+  // because the outer strips run along the length of the boat, everything will be addressed in terms of them
   if (pixelIndex > 0 && pixelIndex < after_bow) {
     
     // to set off center pixel 53 in sync with port and starboard pixel 58 we multiply the index we're at by the ratio of those lengths
@@ -117,6 +132,8 @@ void setPixel(uint8_t pixelIndex, uint8_t j) {
     starboard.setPixelColor(pixelIndex, Wheel((pixelIndex+j) & 255));
     center.setPixelColor(centerIndex, Wheel((centerIndex+j) & 255));
     port.setPixelColor(pixelIndex, Wheel((pixelIndex+j) & 255));
+    outer_strip_port.setPixelColor(pixelIndex, Wheel((pixelIndex+j) & 255));
+    outer_strip_starboard.setPixelColor(pixelIndex, Wheel((pixelIndex+j) & 255));
   }
   // we're looking at the range from the bow through the combing
   else if (pixelIndex >= after_bow && pixelIndex < after_combing) {
@@ -127,6 +144,8 @@ void setPixel(uint8_t pixelIndex, uint8_t j) {
     // we want the color on both sides to be the same, so we're passing in the starboard index into the color wheel
     combing.setPixelColor(combingPortIndex, Wheel((combingStarIndex+j) & 255));
     combing.setPixelColor(combingStarIndex, Wheel((combingStarIndex+j) & 255));
+    outer_strip_port.setPixelColor(pixelIndex, Wheel((pixelIndex+j) & 255));
+    outer_strip_starboard.setPixelColor(pixelIndex, Wheel((pixelIndex+j) & 255));
   }
   // after we've passed the combing we have a small section of the center strip between the combing and the hatch
   else if (pixelIndex >= after_combing && pixelIndex < after_middle) {
@@ -136,20 +155,26 @@ void setPixel(uint8_t pixelIndex, uint8_t j) {
     starboard.setPixelColor(middleIndex, Wheel((middleIndex+j) & 255));
     center.setPixelColor(middleCenterIndex, Wheel((middleIndex+j) & 255));
     port.setPixelColor(middleIndex, Wheel((middleIndex+j) & 255));
+    outer_strip_port.setPixelColor(pixelIndex, Wheel((pixelIndex+j) & 255));
+    outer_strip_starboard.setPixelColor(pixelIndex, Wheel((pixelIndex+j) & 255));
   }
   // for the length of the hatch we just set the port and starboard strips
   else if (pixelIndex >= after_middle && pixelIndex <  after_hatch){
     uint8_t hatchIndex = pixelIndex - combing_port_star_led_count;
     starboard.setPixelColor(hatchIndex, Wheel((hatchIndex+j) & 255));
     port.setPixelColor(hatchIndex, Wheel((hatchIndex+j) & 255));
+    outer_strip_port.setPixelColor(pixelIndex, Wheel((pixelIndex+j) & 255));
+    outer_strip_starboard.setPixelColor(pixelIndex, Wheel((pixelIndex+j) & 255));
   }
   else if (pixelIndex >= after_hatch){
     uint8_t sternIndex = pixelIndex - combing_port_star_led_count;
     // the center index, while offset, will still color itself in sync with the starboard and port side
-    uint8_t sternCenterIndex = pixelIndex - combing_port_star_led_count - 45;
+    uint8_t sternCenterIndex = pixelIndex - combing_port_star_led_count - hatch_gap_led_count;
     starboard.setPixelColor(sternIndex, Wheel((sternIndex+j) & 255));
     center.setPixelColor(sternCenterIndex, Wheel((sternIndex+j) & 255));
     port.setPixelColor(sternIndex, Wheel((sternIndex+j) & 255));
+    outer_strip_port.setPixelColor(pixelIndex, Wheel((pixelIndex+j) & 255));
+    outer_strip_starboard.setPixelColor(pixelIndex, Wheel((pixelIndex+j) & 255));
   }
 }
 
